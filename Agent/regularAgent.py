@@ -6,7 +6,7 @@ class RegularAgent:
         self.no = no
         self.pos = pos
         self.status = 'R'
-        self.neighbors = []
+        self.neighbors = [] #self is considered to be neighbor
         self.update_set = []
 
     def get_pos(self):
@@ -34,8 +34,9 @@ class RegularAgent:
             self.status = 'R'
             raise Exception('Wrong statues was input')
     
-    """input the total adjacent matrix to find neighbors"""
     def find_neighbors(self, graph):
+        """input the total adjacent matrix as list to find neighbors.
+        Adjacent matrix includes self as a neighbor """
         graph = np.array(graph)
         count = 0
         if self.no >= len(graph):
@@ -47,3 +48,21 @@ class RegularAgent:
                     count+=1
                 else:
                     count+=1
+
+    def find_update_set(self, point_set):
+        """Malicious agents directly set its next state.
+           Cured and Regular ones will receive values from neighbors(self included). 
+           Point set contains all agents' position data denoted by 2-D list"""
+        if self.status=='M':
+            self.m_next_state()
+            return
+        elif len(self.neighbors)==0:
+            raise Exception('No neighbors to hear from')
+        else:
+            self.update_set =  [point_set[pos] for pos in self.neighbors]
+
+    def m_next_state(self, lower=0, upper=20):
+        """Malicious will update its values randomly"""
+        x = random.uniform(lower, upper)
+        y = random.uniform(lower, upper)
+        self.set_pos([x,y])

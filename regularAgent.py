@@ -1,4 +1,5 @@
-from Centerpoint import * 
+import sys
+from Centerpoint import *
 import numpy as np
 
 class RegularAgent:
@@ -32,7 +33,7 @@ class RegularAgent:
             self.status = status
         else:
             self.status = 'R'
-            raise Exception('Wrong statues was input')
+            raise Exception('Wrong status was input')
     
     def find_neighbors(self, graph):
         """input the total adjacent matrix as list to find neighbors.
@@ -65,4 +66,36 @@ class RegularAgent:
         """Malicious will update its values randomly"""
         x = random.uniform(lower, upper)
         y = random.uniform(lower, upper)
-        self.set_pos([x,y])
+        self.set_pos(Point(x,y))
+
+
+if __name__ == '__main__':
+    random.seed(1)
+    plot = False #do not draw the process of finding CP
+    n = 10 #num of agents
+    state_point = random_point_set(n, 0, 10) #type==Point
+    agent_f_num = 1 #num of attackers
+    agent_unf_num = n-agent_f_num #num of non-faulty agents
+    agent = [] #agent set
+
+    for i in range(0,n):
+        if i<agent_unf_num:
+            agent.append(RegularAgent(no=i, pos=state_point[i]))
+            agent[i].set_status('R')
+        else:
+            agent.append(RegularAgent(no=i, pos=state_point[i]))
+            agent[i].set_status('M')
+
+    graph_adjacency = [[1,0,1,1,1,1,1,1,1,1],
+                       [1,1,0,1,1,1,1,1,1,1],
+                       [1,1,1,0,1,1,1,1,1,1],
+                       [1,1,1,1,0,1,1,1,1,1],
+                       [1,1,1,1,1,0,1,1,1,1],
+                       [1,1,1,1,1,1,0,1,1,1],
+                       [1,1,1,1,1,1,1,0,1,1],
+                       [1,1,1,1,1,1,1,1,0,1],
+                       [1,1,1,1,1,1,1,1,1,0],
+                       [0,1,1,1,1,1,1,1,1,1]] #adjacent matrix of graph
+    for i in range(0,n):
+        agent[i].find_neighbors(graph_adjacency)
+        agent[i].find_update_set(state_point)

@@ -1,5 +1,5 @@
 import numpy as np
-from Agent.regularAgent import *
+from regularAgent import *
 
 network = [[1,0,1],[0,1,0],[1,1,1]]
 #a = np.array([[1,2],[3,4]])

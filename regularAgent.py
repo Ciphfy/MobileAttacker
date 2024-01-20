@@ -1,4 +1,3 @@
-import sys
 from Centerpoint import *
 import numpy as np
 
@@ -68,6 +67,15 @@ class RegularAgent:
         y = random.uniform(lower, upper)
         self.set_pos(Point(x,y))
 
+    def next_state(self, method='centerpoint'):
+        """Next step of non-faulty agents"""
+        if (method=='centerpoint' and self.status!='M'):
+            cp = Centerpoint()
+            self.pos = cp.reduce_then_get_centerpoint(self.update_set)
+        else:
+            return
+
+
 
 if __name__ == '__main__':
     random.seed(1)
@@ -76,7 +84,7 @@ if __name__ == '__main__':
     state_point = random_point_set(n, 0, 10) #type==Point
     agent_f_num = 1 #num of attackers
     agent_unf_num = n-agent_f_num #num of non-faulty agents
-    agent = [] #agent set
+    agent = [] #agent set。 Type==RegularAgent
 
     for i in range(0,n):
         if i<agent_unf_num:
@@ -99,3 +107,8 @@ if __name__ == '__main__':
     for i in range(0,n):
         agent[i].find_neighbors(graph_adjacency)
         agent[i].find_update_set(state_point)
+        print("position of agent:",agent[i].no,"is",agent[i].pos)
+    
+    for i in range(0,n):
+        agent[i].next_state(method='centerpoint')
+        print("next position of agent",agent[i].no,"is",agent[i].pos)

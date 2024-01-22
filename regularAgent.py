@@ -74,6 +74,31 @@ class RegularAgent:
             self.pos = cp.reduce_then_get_centerpoint(self.update_set)
         else:
             return
+        
+    def check_whether_attacked(self, attack_next_object):
+        '''Input attackers' next targets, then change local state according to it.'''
+        if self.no in attack_next_object:
+            self.status = 'M'
+        else:
+            self.status = 'R'
+        
+
+
+'''Tool function'''
+def attacker_move(n, n_f):
+    '''Generate attackers' target. Num of targets = n_f'''
+    next_object = []
+    i = 0
+    while i<n_f:
+        a = random.randint(0,n-1)
+        if a not in next_object:
+            next_object.append(a)
+            i +=1
+        else:
+            continue
+    return next_object
+
+
 
 
 
@@ -82,10 +107,11 @@ if __name__ == '__main__':
     plot = False #do not draw the process of finding CP
     n = 10 #num of agents
     state_point = random_point_set(n, 0, 10) #type==Point
-    agent_f_num = 1 #num of attackers
+    agent_f_num = 2 #num of attackers
     agent_unf_num = n-agent_f_num #num of non-faulty agents
-    agent = [] #agent set。 Type==RegularAgent
-
+    agent = [] #agent set. Type==RegularAgent
+    
+    '''Initialize the agents(Regular and Malicious).'''
     for i in range(0,n):
         if i<agent_unf_num:
             agent.append(RegularAgent(no=i, pos=state_point[i]))
@@ -93,7 +119,8 @@ if __name__ == '__main__':
         else:
             agent.append(RegularAgent(no=i, pos=state_point[i]))
             agent[i].set_status('M')
-
+    
+    '''Initialize the graph(Adjacent matrix).'''
     graph_adjacency = [[1,0,1,1,1,1,1,1,1,1],
                        [1,1,0,1,1,1,1,1,1,1],
                        [1,1,1,0,1,1,1,1,1,1],
@@ -103,12 +130,57 @@ if __name__ == '__main__':
                        [1,1,1,1,1,1,1,0,1,1],
                        [1,1,1,1,1,1,1,1,0,1],
                        [1,1,1,1,1,1,1,1,1,0],
-                       [0,1,1,1,1,1,1,1,1,1]] #adjacent matrix of graph
+                       [0,1,1,1,1,1,1,1,1,1]] 
+    
+    '''Initialize the communication topology and configurations of round 1'''
     for i in range(0,n):
         agent[i].find_neighbors(graph_adjacency)
         agent[i].find_update_set(state_point)
-        print("position of agent:",agent[i].no,"is",agent[i].pos)
+        #print("position of agent:",agent[i].no,"is",agent[i].pos)
     
-    for i in range(0,n):
-        agent[i].next_state(method='centerpoint')
-        print("next position of agent",agent[i].no,"is",agent[i].pos)
+    plt.figure(figsize=(5,5))
+    plt.xlim((0,20))
+    plt.ylim((0,20))
+    attack_last_obj = []
+    attack_next_obj = []
+    for a in agent:
+        if a.status != 'M':
+            plot_point(a.pos, color='b')
+        else:
+            plot_point(a.pos,color='r')
+            attack_last_obj.append(a.no) #malicious agent in round k=0
+    fig_title = 'Malicious agent is'
+    for i in attack_last_obj:
+        fig_title = fig_title + '\x20' +str(i)
+    plt.title(fig_title)
+    plt.savefig('result\model1\%s.png' %('initial'))
+
+    '''Start iterations''' 
+    for k in range(0,10):
+        pos_t = [] #store the position data in every round
+        for i in range(0,n):
+            agent[i].next_state(method='centerpoint')
+            pos_t.append(agent[i].pos)
+            #print("next position of agent",agent[i].no,"is",agent[i].pos)
+        
+        agent_r_pos = [r.pos for r in agent if r.status!='M']
+        agent_m_pos = [m.pos for m in agent if m.status=='M']
+        '''plot the result'''
+        plt.clf()
+        plt.xlim((0,20))
+        plt.ylim((0,20))
+        plot_point_set(agent_r_pos,'b')
+        plot_point_set(agent_m_pos,'r')
+        fig_title = 'Malicious agent is'
+        for i in attack_last_obj:
+            fig_title = fig_title + '\x20' +str(i)
+        plt.title(fig_title)
+        plt.savefig('result\model1\%s%d.png' %('round',k+1))
+        
+        '''Set configurations for next iterations'''
+        attack_next_obj = attacker_move(n=n, n_f=agent_f_num)
+        attack_last_obj = attack_next_obj
+        for a in agent:
+            a.check_whether_attacked(attack_next_obj)
+        for a in agent:
+            a.find_update_set(pos_t)

@@ -1,5 +1,6 @@
 from Centerpoint import *
 import numpy as np
+from configuration import *
 
 class RegularAgent:
     def __init__(self, no, pos):
@@ -77,10 +78,13 @@ class RegularAgent:
         
     def check_whether_attacked(self, attack_next_object):
         '''Input attackers' next targets, then change local state according to it.'''
-        if self.no in attack_next_object:
-            self.status = 'M'
+        if self.no not in attack_next_object:
+            if self.status == 'M':
+                self.status = 'C'
+            else:
+                self.status = 'R'
         else:
-            self.status = 'R'
+            self.status = 'M'
         
 
 
@@ -98,6 +102,25 @@ def attacker_move(n, n_f):
             continue
     return next_object
 
+def plot_then_save(save_path, all_agent, x=(0,20), y=(0,20)):
+    plt.clf()
+    plt.xlim(x)
+    plt.ylim(y)
+    for i in all_agent:
+        if i.status == 'R':
+            plot_point(i.pos,color='b')
+        if i.status == 'C':
+            plot_point(i.pos,color='y')
+            plt.annotate('C'+str(i.no), (i.pos.x, i.pos.y))
+        if i.status == 'M':
+            plot_point(i.pos,color='r')
+            plt.annotate('M'+str(i.no), (i.pos.x, i.pos.y))
+    '''fig_title = 'Malicious agent is:'
+    for i in m_agent:
+        fig_title = fig_title + '\x20' +str(i)
+    plt.title(fig_title)'''
+    plt.savefig(save_path+'%s%d.png' %('round',k+1))
+
 
 
 
@@ -105,9 +128,13 @@ def attacker_move(n, n_f):
 if __name__ == '__main__':
     random.seed(1)
     plot = False #do not draw the process of finding CP
-    n = 10 #num of agents
+    save_path = 'result\model1\\'
+    '''Initialize the graph(Adjacent matrix).'''
+    graph_adjacency = graph_test
+    '''Initialize the number of attackers'''
+    n = len(graph_adjacency) #num of agents
     state_point = random_point_set(n, 0, 10) #type==Point
-    agent_f_num = 2 #num of attackers
+    agent_f_num = 3 #num of attackers
     agent_unf_num = n-agent_f_num #num of non-faulty agents
     agent = [] #agent set. Type==RegularAgent
     
@@ -120,24 +147,7 @@ if __name__ == '__main__':
             agent.append(RegularAgent(no=i, pos=state_point[i]))
             agent[i].set_status('M')
     
-    '''Initialize the graph(Adjacent matrix).'''
-    graph_adjacency = [[1,0,1,1,1,1,1,1,1,1],
-                       [1,1,0,1,1,1,1,1,1,1],
-                       [1,1,1,0,1,1,1,1,1,1],
-                       [1,1,1,1,0,1,1,1,1,1],
-                       [1,1,1,1,1,0,1,1,1,1],
-                       [1,1,1,1,1,1,0,1,1,1],
-                       [1,1,1,1,1,1,1,0,1,1],
-                       [1,1,1,1,1,1,1,1,0,1],
-                       [1,1,1,1,1,1,1,1,1,0],
-                       [0,1,1,1,1,1,1,1,1,1]] 
-    
-    '''Initialize the communication topology and configurations of round 1'''
-    for i in range(0,n):
-        agent[i].find_neighbors(graph_adjacency)
-        agent[i].find_update_set(state_point)
-        #print("position of agent:",agent[i].no,"is",agent[i].pos)
-    
+    '''Initialize the configurations of round 1 and figure style''' 
     plt.figure(figsize=(5,5))
     plt.xlim((0,20))
     plt.ylim((0,20))
@@ -147,39 +157,38 @@ if __name__ == '__main__':
         if a.status != 'M':
             plot_point(a.pos, color='b')
         else:
-            plot_point(a.pos,color='r')
-            attack_last_obj.append(a.no) #malicious agent in round k=0
-    fig_title = 'Malicious agent is'
-    for i in attack_last_obj:
+            plot_point(a.pos,color='b')
+            attack_next_obj.append(a.no) #malicious agent in round k=0
+    fig_title = 'Malicious agent is:'
+    for i in attack_next_obj:
         fig_title = fig_title + '\x20' +str(i)
     plt.title(fig_title)
-    plt.savefig('result\model1\%s.png' %('initial'))
+    plt.savefig(save_path+'%s.png' %('initial'))
+    
+    '''Initial the communication topology'''
+    for i in range(0,n):
+        agent[i].find_neighbors(graph_adjacency)
+        agent[i].find_update_set(state_point)
+        #print("position of agent:",agent[i].no,"is",agent[i].pos) 
 
     '''Start iterations''' 
-    for k in range(0,10):
-        pos_t = [] #store the position data in every round
-        for i in range(0,n):
+    for k in range(0,10): #set iteration times
+        pos_t = [] #store the position data in every round. type==Point
+        for i in range(0,n): #update local values with updating set 
             agent[i].next_state(method='centerpoint')
             pos_t.append(agent[i].pos)
             #print("next position of agent",agent[i].no,"is",agent[i].pos)
         
-        agent_r_pos = [r.pos for r in agent if r.status!='M']
-        agent_m_pos = [m.pos for m in agent if m.status=='M']
         '''plot the result'''
-        plt.clf()
-        plt.xlim((0,20))
-        plt.ylim((0,20))
-        plot_point_set(agent_r_pos,'b')
-        plot_point_set(agent_m_pos,'r')
-        fig_title = 'Malicious agent is'
-        for i in attack_last_obj:
-            fig_title = fig_title + '\x20' +str(i)
-        plt.title(fig_title)
-        plt.savefig('result\model1\%s%d.png' %('round',k+1))
+        #agent_r_pos = [r.pos for r in agent if r.status=='R']
+        #agent_m_pos = [m.pos for m in agent if m.status=='M']
+        #agent_c_pos = [c.pos for c in agent if c.status=='C']
+        plot_then_save(save_path, agent)
         
-        '''Set configurations for next iterations'''
-        attack_next_obj = attacker_move(n=n, n_f=agent_f_num)
+        '''Set configurations for next iterations. Attackers make movements'''
         attack_last_obj = attack_next_obj
+        attack_next_obj = attacker_move(n=n, n_f=agent_f_num)
+        
         for a in agent:
             a.check_whether_attacked(attack_next_obj)
         for a in agent:

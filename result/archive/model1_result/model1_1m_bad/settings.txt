@@ -1,0 +1,2 @@
+original 14nodes 2_2robust d_6=2（test_r22）
+random seed=18
